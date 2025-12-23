@@ -21,9 +21,8 @@ class WorkerConfig:
         "L": "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs-l",  # L line
     }
     
-    # Target lines for Manhattan-bound trains (MVP focus)
-    # Can be expanded to include all lines by updating this list
-    TARGET_LINES = ["1", "2", "3", "4", "5", "6", "A", "C", "E"]
+    # Target lines - all 22 regular NYC subway lines (excluding shuttles)
+    TARGET_LINES = ["1", "2", "3", "4", "5", "6", "7", "A", "B", "C", "D", "E", "F", "G", "J", "L", "M", "N", "Q", "R", "W", "Z"]
     
     # Redis Configuration
     REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import FindNearestStation from './FindNearestStation'
 
 interface StationSelectorProps {
   lines: string[]
@@ -82,10 +83,20 @@ export default function StationSelector({
   }, [selectedLine, authToken, onStationChange])
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-lg font-semibold mb-4">Select Station</h2>
+    <div className="space-y-4">
+      {/* Find Nearest Station Component */}
+      <FindNearestStation
+        stations={stations}
+        onStationSelect={onStationChange}
+        selectedLine={selectedLine}
+      />
 
-      {/* Line Selection */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-6 border-2 border-gray-100">
+        <h2 className="text-xl font-bold mb-5 text-gray-800">
+          Select Station
+        </h2>
+
+        {/* Line Selection */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Line
@@ -95,6 +106,7 @@ export default function StationSelector({
           onChange={(e) => onLineChange(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
+          <option value="">Select a line</option>
           {lines.map((line) => (
             <option key={line} value={line}>
               Line {line}
@@ -154,6 +166,7 @@ export default function StationSelector({
             Southbound
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

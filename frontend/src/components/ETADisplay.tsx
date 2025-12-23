@@ -19,8 +19,9 @@ export default function ETADisplay({
 }: ETADisplayProps) {
   if (!station) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-        Select a station to view ETAs
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-8 text-center border-2 border-dashed border-gray-200">
+        <p className="text-lg text-gray-600 font-medium">Select a station to view ETAs</p>
+        <p className="text-sm text-gray-400 mt-2">Choose a line and station above</p>
       </div>
     )
   }
@@ -92,60 +93,73 @@ export default function ETADisplay({
     }
   }
 
+  const lineColor = line === '1' || line === '2' || line === '3'
+    ? '#EE352E'
+    : line === '4' || line === '5' || line === '6'
+    ? '#00933C'
+    : '#0039A6'
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-6 border-2 border-gray-100">
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h2 className="text-xl font-bold">
-            Line {line} - {data.station_name || station}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {direction === 'N' ? 'Northbound' : 'Southbound'}
-          </p>
+          <div className="flex items-center gap-3 mb-2">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
+              style={{ backgroundColor: lineColor }}
+            >
+              {line}
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {data.station_name || station}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 ml-12">
+            <span className="text-sm font-medium text-gray-600">
+              {direction === 'N' ? 'Northbound' : 'Southbound'}
+            </span>
+          </div>
         </div>
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-            'on_time'
-          )}`}
-        >
+        <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span>
           Live
         </span>
       </div>
 
-      <div className="space-y-3">
-        {directionData.trains.slice(0, 3).map((train: Train, index: number) => (
+      <div className="space-y-4">
+        {directionData.trains.slice(0, 5).map((train: Train, index: number) => (
           <div
             key={train.train_id || index}
-            className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition"
+            className="bg-white rounded-lg p-5 border-2 border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
           >
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                    line === '1' || line === '2' || line === '3'
-                      ? 'bg-[#EE352E]'
-                      : line === '4' || line === '5' || line === '6'
-                      ? 'bg-[#00933C]'
-                      : 'bg-[#0039A6]'
-                  }`}
+                  className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg"
+                  style={{ backgroundColor: lineColor }}
                 >
                   {line}
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">
-                    {train.eta_minutes === 0 ? 'Arriving' : `${train.eta_minutes} min`}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-gray-900">
+                      {train.eta_minutes === 0 ? 'NOW' : `${train.eta_minutes}`}
+                    </span>
+                    {train.eta_minutes !== 0 && (
+                      <span className="text-lg text-gray-500 font-medium">min</span>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(train.arrival_time).toLocaleTimeString()}
+                  <div className="text-sm text-gray-500 mt-1">
+                    Arrives at {new Date(train.arrival_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
               <span
-                className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(
                   train.status || 'on_time'
                 )}`}
               >
-                {train.status === 'on_time' ? 'On Time' : train.status}
+                {train.status === 'on_time' ? '✓ On Time' : train.status}
               </span>
             </div>
           </div>
@@ -153,9 +167,11 @@ export default function ETADisplay({
       </div>
 
       {data.last_updated && (
-        <p className="text-xs text-gray-400 mt-4">
-          Last updated: {new Date(data.last_updated).toLocaleString()}
-        </p>
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-400">
+            Last updated: {new Date(data.last_updated).toLocaleString()}
+          </p>
+        </div>
       )}
     </div>
   )

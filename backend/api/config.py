@@ -39,5 +39,5 @@ class Config:
     
     # Supported subway lines (MVP focus on main Manhattan lines)
     # Can be expanded to support all MTA lines
-    SUPPORTED_LINES = ["1", "2", "3", "4", "5", "6", "A", "C", "E"]
+    SUPPORTED_LINES = ["1", "2", "3", "4", "5", "6", "7", "A", "B", "C", "D", "E", "F", "G", "J", "L", "M", "N", "Q", "R", "W", "Z"]
 

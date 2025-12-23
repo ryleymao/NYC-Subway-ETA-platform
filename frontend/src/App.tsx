@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider, useQuery } from 'react-query'
 import axios from 'axios'
 import StationSelector from './components/StationSelector'
 import ETADisplay from './components/ETADisplay'
-import LineStatus from './components/LineStatus'
+import SubwayMap from './components/SubwayMap'
+import Navigation, { StatusPage } from './components/Navigation'
+import { useGeolocation } from './hooks/useGeolocation'
 
 // In dev mode, Vite proxy handles /api -> backend
 // In production (Docker), nginx proxy handles /api -> backend
@@ -29,12 +31,22 @@ const setAuthToken = (token: string) => {
 }
 
 function AppContent() {
-  const [selectedLine, setSelectedLine] = useState<string>('1')
+  const [selectedLine, setSelectedLine] = useState<string>('')
   const [selectedStation, setSelectedStation] = useState<string>('')
   const [selectedDirection, setSelectedDirection] = useState<string>('N')
   const [authToken, setAuthTokenState] = useState<string>(getAuthToken())
+  const [currentView, setCurrentView] = useState<'main' | 'status'>('main')
+  const { latitude, longitude } = useGeolocation()
 
-  const lines = ['1', '2', '3', '4', '5', '6', 'A', 'C', 'E']
+  // All 22 regular NYC subway lines (excluding shuttles)
+  const lines = ['1', '2', '3', '4', '5', '6', '7', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'L', 'M', 'N', 'Q', 'R', 'W', 'Z']
+
+  // Update user location when geolocation changes
+  useEffect(() => {
+    if (latitude && longitude) {
+      setUserLocation({ lat: latitude, lon: longitude })
+    }
+  }, [latitude, longitude])
 
   // Fetch ETA data
   const { data: etaData, isLoading, error, refetch } = useQuery(
@@ -110,36 +122,96 @@ function AppContent() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+  // Get station info for map
+  const [stationInfo, setStationInfo] = useState<{ id: string; name: string } | null>(null)
+  const [allStations, setAllStations] = useState<Array<{ id: string; name: string }>>([])
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+
+  useEffect(() => {
+    const fetchStationInfo = async () => {
+      if (!selectedStation) {
+        setStationInfo(null)
+        return
+      }
+      
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || '/api'
+        const response = await axios.get(
+          `${API_BASE}/stations/${selectedLine}`,
+          {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }
+        )
+        if (response.data?.stations) {
+          setAllStations(response.data.stations)
+          const station = response.data.stations.find((s: any) => s.id === selectedStation)
+          if (station) {
+            setStationInfo({ id: station.id, name: station.name })
+          }
+        }
+      } catch (error) {
+        // Fallback
+        setStationInfo({ id: selectedStation, name: selectedStation })
+      }
+    }
+    
+    fetchStationInfo()
+  }, [selectedStation, selectedLine, authToken])
+
+  // Show status page if selected
+  if (currentView === 'status') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
+        <Navigation
+          lines={lines}
+          authToken={authToken}
+          currentView={currentView}
+          onViewChange={setCurrentView}
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              🚇 NYC Subway ETA
-            </h1>
-            <button
-              onClick={() => {
-                setAuthToken('')
-                setAuthTokenState('')
-              }}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              Change Token
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setAuthToken('')
+              setAuthTokenState('')
+            }}
+            className="mb-4 text-sm text-gray-600 hover:text-gray-800 transition-colors px-3 py-1 rounded-md hover:bg-gray-200"
+          >
+            Change Token
+          </button>
         </div>
-      </header>
+        <StatusPage lines={lines} authToken={authToken} />
+      </div>
+    )
+  }
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Line Status Overview */}
-        <LineStatus lines={lines} authToken={authToken} />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100">
+      {/* Navigation */}
+      <Navigation
+        lines={lines}
+        authToken={authToken}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+      />
 
-        {/* Main Content */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Station Selector */}
-          <div className="lg:col-span-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Token change button */}
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={() => {
+              setAuthToken('')
+              setAuthTokenState('')
+            }}
+            className="text-sm text-gray-600 hover:text-gray-800 transition-colors px-3 py-1 rounded-md hover:bg-gray-200"
+          >
+            Change Token
+          </button>
+        </div>
+
+        {/* Main Content Grid - Mobile-first responsive */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+          {/* Left Column - Station Selector */}
+          <div className="lg:col-span-3">
             <StationSelector
               lines={lines}
               selectedLine={selectedLine}
@@ -152,8 +224,8 @@ function AppContent() {
             />
           </div>
 
-          {/* ETA Display */}
-          <div className="lg:col-span-2">
+          {/* Middle Column - ETA Display */}
+          <div className="lg:col-span-5">
             <ETADisplay
               line={selectedLine}
               station={selectedStation}
@@ -162,6 +234,19 @@ function AppContent() {
               isLoading={isLoading}
               error={error}
             />
+          </div>
+
+          {/* Right Column - Map */}
+          <div className="lg:col-span-4 order-first lg:order-last">
+            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 h-[400px] sm:h-[500px] lg:h-[600px]">
+              <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 text-gray-800 px-2">Station Map</h2>
+              <SubwayMap
+                selectedStation={stationInfo || undefined}
+                line={selectedLine}
+                stations={allStations}
+                userLocation={userLocation}
+              />
+            </div>
           </div>
         </div>
       </div>
